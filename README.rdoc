@@ -1,0 +1,115 @@
+= DejaVue
+
+Yet another gem to store versions of your model's data, but using MongoDB 
+as backend. Based on PaperTrail (http://github.com/airblade/paper_trail/).
+
+It also allows you to versionate associated models (by now, only 
+one-to-one associations).
+
+== Dependencies
+
+It depend on mongo and mongo_mapper gems. Your MongoDB connection
+might already have been created.
+
+As it uses a NoSQL db, you don't need migrations to start using it.
+
+== Why choose DejaVue
+
+The main goal of DejaVue is to keep track of associated models. It's 
+useful for a model whose relations change among time and to see how
+it really looked like at a certain point.
+
+As in PaperTrail, there are 3 kinds of versions: create, update and destroy
+
+== Installing
+
+  $ bundle install
+	$ gem install gemcutter
+  $ gem build deja_vue.gemspec
+  $ gem install ./deja_vue-*.gem
+
+== Beggining with DejaVue: Add to your model
+
+Add a single line and your model will start beeing versionated:
+
+ def SomeModel < ActiveRecord::Base
+  has_deja_vue
+ end
+
+Or, for example, use the ignore option:
+
+ def SomeModel < ActiveRecord::Base
+  has_deja_vue :ignore => :location
+ end
+
+== Configuring user dynamically
+
+Sometimes you might need to set the user that is changing the 
+model data dynamically, eg. while processing background jobs.
+
+In such case, you can set user using:
+
+ DejaVue.setting_user_as('admin') do
+  @post.title = 'new title'
+  @post.save
+ end
+
+This way you will set who_did_it as 'admin', create a new history version
+and then rollback to previous user.
+
+== More Options
+
+ You might pass some options, including:
+ :ignore                 | An Array of fields that will be ignored. If
+                         | only those fields have changed, then no version
+                         | will be created.
+                         | has_deja_vue :ignore => :last_exported_on
+ :associations           | Store associated models to be record with the model
+                         | so it can be fully restored. Right now it works only
+                         | with has_one / belongs_to relationships.
+                         | Ex.:
+                         | class Account < ActiveRecord::Base
+                         |   has_one :account_preference
+                         |
+                         |   has_deja_vue :associations => [:account_preference]
+                         | end
+                         |
+ :extra_info_fields      | Almost the same as the above option. But it handles
+                         | more simple info (like strings, integers, floats).
+                         | Useful to store a tag_list field or a counter cache
+                         | Ex:
+                         |
+                         | class BlogPost < ActiveRecord::Base
+                         |   acts_as_taggable_on :tags
+                         |
+                         |   has_deja_vue :extra_info_fields => [:tag_list]
+                         | end
+                         |
+ :who_did_it             | a default value for record who_did_it when you
+                         | are not in a request-response cycle (ex. in a job).
+                         | Ex.:
+                         | has_deja_vue :who_did_it => 'admin'
+                         | Alternatively you are able to set the user right
+                         | before save the model that will be versionated, using:
+                         | DejaVue.who_did_it = 'otavio'
+                         | SomeModel.save
+
+== Important info regarding DejaVue behaviour
+
+Differently from PaperTrail, each version will record the current model info.
+
+So PapelTrail _create_ version have reify == nil
+
+DejaVue have _create_ version == model_data_while_creating
+
+== Reporting Bugs
+
+http://github.com/riopro/deja_vue/issues
+
+== Authors
+
+Otávio Sampaio (osampaio at riopro dot com dot br)
+
+Rodrigo Oliveira (roliveira at riopro dot com dot br)
+
+
